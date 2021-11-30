@@ -1,79 +1,52 @@
+import { Nullable } from "@web3api/wasm-as";
 import {
   DateTime_Query,
   Ethereum_Connection,
   Ethereum_Query,
   Gelato_CheckerResult,
-  Gelato_Ethereum_Connection,
-  GraphNode_Query,
-  Http_Query,
   Input_checker,
-  Logger_Logger_LogLevel,
-  Logger_Query,
-  UserConfig,
+  Coingecko_Query,
+  Coingecko_SimplePrice,
+  Coingecko_SimplePriceData,
 } from "./w3";
 
+function createNullable<T>(v: T): Nullable<T> {
+  const obj: Nullable<T> = new Nullable<T>();
+  obj.value = v;
+  return obj;
+}
+
 export function checker(input: Input_checker): Gelato_CheckerResult {
-  const config = UserConfig.fromBuffer(input.argBuffer);
-  const COUNTER = config.counterAddress;
-  const connection = input.connection;
-  let ethConnection: Ethereum_Connection | null = null;
-  if (connection) {
-    ethConnection = {
-      node: connection.node,
-      networkNameOrChainId: connection.networkNameOrChainId,
-    };
+  const ids = ["ethereum"];
+  const vs_currencies = ["usd"];
+  const include_24hr_change = createNullable(false);
+  const include_24hr_vol = createNullable(false);
+  const include_last_updated_at = createNullable(false);
+  const include_market_cap = createNullable(false);
+
+  const priceInfo = Coingecko_Query.simplePrice({
+    ids: ids,
+    vs_currencies: vs_currencies,
+    include_24hr_change: include_24hr_change,
+    include_24hr_vol: include_24hr_vol,
+    include_last_updated_at: include_last_updated_at,
+    include_market_cap: include_market_cap,
+  });
+
+  const canExec = priceInfo ? true : false;
+  let price = "0";
+
+  if (priceInfo && priceInfo.length > 0 && priceInfo[0].price_data) {
+    const price_data = priceInfo[0].price_data as Coingecko_SimplePriceData[];
+    if (price_data.length > 0 && price_data[0].price) {
+      price = price_data[0].price;
+    }
   }
-
-  Logger_Query.log({
-    level: Logger_Logger_LogLevel.INFO,
-    message: `config.counterAddress : ${config.counterAddress}`,
-  });
-
-  const lastExecuted = Ethereum_Query.callContractView({
-    address: COUNTER,
-    method: "function lastExecuted() view returns (uint256)",
-    args: null,
-    connection: ethConnection,
-  });
-
-  const count = Ethereum_Query.callContractView({
-    address: COUNTER,
-    method: "function count() view returns (uint256)",
-    args: null,
-    connection: ethConnection,
-  });
-
-  Logger_Query.log({
-    level: Logger_Logger_LogLevel.INFO,
-    message: `Last executed : ${lastExecuted}`,
-  });
-
-  Logger_Query.log({
-    level: Logger_Logger_LogLevel.INFO,
-    message: `Count : ${count}`,
-  });
-
-  const timeNow = Math.floor(
-    parseInt(DateTime_Query.currentTime({}).toString()) / 1000
-  );
-  const THREE_MINUTES = 3 * 60;
-  const nextExecutionTime = parseInt(lastExecuted) + THREE_MINUTES;
-
-  Logger_Query.log({
-    level: Logger_Logger_LogLevel.INFO,
-    message: `nextExecutionTime : ${nextExecutionTime}`,
-  });
-
-  Logger_Query.log({
-    level: Logger_Logger_LogLevel.INFO,
-    message: `timeNow : ${timeNow}`,
-  });
-
-  const canExec = timeNow >= nextExecutionTime;
+  
 
   const execPayload = Ethereum_Query.encodeFunction({
-    method: "function increaseCount(uint256)",
-    args: ["100"],
+    method: "function updateETHPrice(uint256)",
+    args: [price],
   });
 
   const resolverData: Gelato_CheckerResult = {
