@@ -45,6 +45,7 @@ export const getWeb3ApiClient = async (
       plugins: [
         {
           uri: "ens/datetime.eth",
+          // @ts-ignore
           plugin: dateTimePlugin({}),
         },
         {

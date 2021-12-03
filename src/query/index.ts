@@ -1,4 +1,4 @@
-import { Nullable } from "@web3api/wasm-as";
+import { Nullable, BigInt } from "@web3api/wasm-as";
 import {
   DateTime_Query,
   Ethereum_Connection,
@@ -39,7 +39,8 @@ export function checker(input: Input_checker): Gelato_CheckerResult {
   if (priceInfo && priceInfo.length > 0 && priceInfo[0].price_data) {
     const price_data = priceInfo[0].price_data as Coingecko_SimplePriceData[];
     if (price_data.length > 0 && price_data[0].price) {
-      price = price_data[0].price;
+      // Todo: fix this hack
+      price = (parseFloat(price_data[0].price) * 1000000).toString().replace(".0", "");
     }
   }
   
