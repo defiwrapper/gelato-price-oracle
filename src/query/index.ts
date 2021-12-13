@@ -1,4 +1,4 @@
-import { Nullable, BigInt } from "@web3api/wasm-as";
+import { Nullable, JSON } from "@web3api/wasm-as";
 import {
   DateTime_Query,
   Ethereum_Connection,
@@ -16,15 +16,33 @@ function createNullable<T>(v: T): Nullable<T> {
   return obj;
 }
 
+const coins = ["ethereum", "bitcoin", "binancecoin", "cardano", "solana"];
+
+function coinSymbolMap(coin: string): string {
+  if (coin == "ethereum") {
+    return "ETH";
+  } else if (coin == "bitcoin") {
+    return "BTC";
+  } else if (coin == "binancecoin") {
+    return "BNB";
+  } else if (coin == "cardano") {
+    return "ADA";
+  } else if (coin == "solana") {
+    return "SOL";
+  } else {
+    throw new Error("coinSymbolMap: coin not found");
+  }
+}
+
 export function checker(input: Input_checker): Gelato_CheckerResult {
-  const ids = ["ethereum"];
+  const ids = coins;
   const vs_currencies = ["usd"];
   const include_24hr_change = createNullable(false);
   const include_24hr_vol = createNullable(false);
   const include_last_updated_at = createNullable(false);
   const include_market_cap = createNullable(false);
 
-  const priceInfo = Coingecko_Query.simplePrice({
+  const priceInfos: Coingecko_SimplePrice[] | null = Coingecko_Query.simplePrice({
     ids: ids,
     vs_currencies: vs_currencies,
     include_24hr_change: include_24hr_change,
@@ -33,21 +51,36 @@ export function checker(input: Input_checker): Gelato_CheckerResult {
     include_market_cap: include_market_cap,
   });
 
-  const canExec = priceInfo ? true : false;
-  let price = "0";
+  const canExec = priceInfos ? true : false;
+  let prices: Array<i64> = [1, 2, 3, 4, 5];
+  
+  // for (let i = 0; i < ids.length; i++) {
+  //   const priceInfo = priceInfos[i];
+  //   const price = priceInfo.price_data;
+  //   prices.push(price);
+  // }
 
-  if (priceInfo && priceInfo.length > 0 && priceInfo[0].price_data) {
-    const price_data = priceInfo[0].price_data as Coingecko_SimplePriceData[];
-    if (price_data.length > 0 && price_data[0].price) {
-      // Todo: fix this hack
-      price = (parseFloat(price_data[0].price) * 1000000).toString().replace(".0", "");
-    }
+  // if (priceInfo && priceInfo.length > 0 && priceInfo[0].price_data) {
+  //   const price_data = priceInfo[0].price_data as Coingecko_SimplePriceData[];
+  //   if (price_data.length > 0 && price_data[0].price) {
+  //     price = <i64>(parseFloat(price_data[0].price) * 1000000);
+  //   }
+  // }
+
+  const coinsArr = new JSON.Arr();
+  for (let i = 0; i < ids.length; i++) {
+    coinsArr.push(new JSON.Str(coinSymbolMap(coins[i])));
+  }
+
+  const pricesArr = new JSON.Arr();
+  for (let i = 0; i < ids.length; i++) {
+    pricesArr.push(new JSON.Integer(prices[i]));
   }
   
 
   const execPayload = Ethereum_Query.encodeFunction({
-    method: "function updateETHPrice(uint256)",
-    args: [price],
+    method: "function updateCoinPrices(string[] memory _coins, uint256[] memory _prices)",
+    args: ["[\"ETH\", \"BTC\"]", "[1,2]"],
   });
 
   const resolverData: Gelato_CheckerResult = {
