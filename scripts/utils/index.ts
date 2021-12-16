@@ -46,10 +46,10 @@ export const getWeb3ApiClient = async (
     {},
     {
       plugins: [
-        // {
-        //   uri: "ens/ipfs.web3api.eth",
-        //   plugin: ipfsPlugin({provider: "http://localhost:5001"})
-        // },
+        {
+          uri: "ens/ipfs.web3api.eth",
+          plugin: ipfsPlugin({provider: "https://gateway.pinata.cloud/"})
+        },
         {
           uri: "ens/datetime.eth",
           // @ts-ignore

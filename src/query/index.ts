@@ -52,35 +52,26 @@ export function checker(input: Input_checker): Gelato_CheckerResult {
   });
 
   const canExec = priceInfos ? true : false;
-  let prices: Array<i64> = [1, 2, 3, 4, 5];
-  
-  // for (let i = 0; i < ids.length; i++) {
-  //   const priceInfo = priceInfos[i];
-  //   const price = priceInfo.price_data;
-  //   prices.push(price);
-  // }
-
-  // if (priceInfo && priceInfo.length > 0 && priceInfo[0].price_data) {
-  //   const price_data = priceInfo[0].price_data as Coingecko_SimplePriceData[];
-  //   if (price_data.length > 0 && price_data[0].price) {
-  //     price = <i64>(parseFloat(price_data[0].price) * 1000000);
-  //   }
-  // }
-
+  const prices: JSON.Arr = new JSON.Arr();
   const coinsArr = new JSON.Arr();
-  for (let i = 0; i < ids.length; i++) {
-    coinsArr.push(new JSON.Str(coinSymbolMap(coins[i])));
-  }
 
-  const pricesArr = new JSON.Arr();
-  for (let i = 0; i < ids.length; i++) {
-    pricesArr.push(new JSON.Integer(prices[i]));
+  if (priceInfos) {
+    for (let i = 0; i < priceInfos.length; i++) {
+      if (priceInfos[i]) {
+        const price_data = priceInfos[i].price_data as Coingecko_SimplePriceData[];
+        if (price_data.length > 0 && price_data[0].price) {
+          const currency = priceInfos[i].id;
+          const price = <i64>(parseFloat(price_data[0].price) * 1000000);
+          prices.push(new JSON.Integer(price));
+          coinsArr.push(new JSON.Str(coinSymbolMap(currency)));
+        }
+      }
+    }
   }
-  
 
   const execPayload = Ethereum_Query.encodeFunction({
     method: "function updateCoinPrices(string[] memory _coins, uint256[] memory _prices)",
-    args: ["[\"ETH\", \"BTC\"]", "[1,2]"],
+    args: [coinsArr.stringify(), prices.stringify()],
   });
 
   const resolverData: Gelato_CheckerResult = {
