@@ -1,0 +1,7 @@
+query {
+  Checker {
+    checker(
+      argBuffer: $arg
+    )
+  }
+}

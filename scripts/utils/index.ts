@@ -3,6 +3,7 @@ import { graphNodePlugin } from "@web3api/graph-node-plugin-js";
 import { ConnectionConfigs, ethereumPlugin } from "@web3api/ethereum-plugin-js";
 import { loggerPlugin } from "@web3api/logger-plugin-js";
 import { httpPlugin } from "@web3api/http-plugin-js";
+import {ipfsPlugin} from "@web3api/ipfs-plugin-js";
 import { dateTimePlugin } from "date-time-plugin";
 import { ethers } from "ethers";
 import { JsonRpcProvider } from "@web3api/client-js/build/pluginConfigs/Ethereum";
@@ -25,6 +26,8 @@ const getProvider = (chain: string) => {
       ? `https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`
       : chain == "fantom"
       ? "https://rpcapi.fantom.network/"
+      : chain == "local"
+      ? "http://localhost:8545"
       : "";
 
   return new ethers.providers.JsonRpcProvider(rpc);
@@ -43,6 +46,10 @@ export const getWeb3ApiClient = async (
     {},
     {
       plugins: [
+        {
+          uri: "ens/ipfs.web3api.eth",
+          plugin: ipfsPlugin({provider: "https://gateway.pinata.cloud/"})
+        },
         {
           uri: "ens/datetime.eth",
           // @ts-ignore
